@@ -95,7 +95,7 @@ function dragula (initialContainers, options) {
     _moveX = e.clientX;
     _moveY = e.clientY;
 
-    var ignore = whichMouseButton(e) !== 1 || e.metaKey || e.ctrlKey;
+    var ignore = whichMouseButton(e) !== 1;
     if (ignore) {
       return; // we only care about honest-to-god left clicks and touch events
     }
@@ -119,6 +119,16 @@ function dragula (initialContainers, options) {
     if (!_grabbed) {
       return;
     }
+    var eventDetails = {
+      ctrlKey: false,
+      shiftKey: false
+    };
+    if (e.metaKey || e.ctrlKey) {
+      eventDetails.ctrlKey = true;
+    }
+    if (e.shiftKey) {
+      eventDetails.shiftKey = true;
+    }
     if (whichMouseButton(e) === 0) {
       release({});
       return; // when text is selected on an input and then dragged, mouseup doesn't fire. this is our only hope
@@ -140,7 +150,7 @@ function dragula (initialContainers, options) {
     eventualMovements(true);
     movements();
     end();
-    start(grabbed);
+    start(grabbed, eventDetails);
 
     var offset = getOffset(_item);
     _offsetX = getCoord('pageX', e) - offset.left;
@@ -194,11 +204,11 @@ function dragula (initialContainers, options) {
   function manualStart (item) {
     var context = canStart(item);
     if (context) {
-      start(context);
+      start(context, {ctrlKey: false, shiftKey: false});
     }
   }
 
-  function start (context) {
+  function start (context, eventDetails) {
     if (isCopy(context.item, context.source)) {
       _copy = context.item.cloneNode(true);
       drake.emit('cloned', _copy, context.item, 'copy');
@@ -209,7 +219,7 @@ function dragula (initialContainers, options) {
     _initialSibling = _currentSibling = nextEl(context.item);
 
     drake.dragging = true;
-    drake.emit('drag', _item, _source);
+    drake.emit('drag', _item, _source, eventDetails);
   }
 
   function invalidTarget () {
